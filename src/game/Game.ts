@@ -26,7 +26,6 @@ export class Game {
     private running = true;
     private splitPressed = false;
     private ejectPressed = false;
-    private ejectCooldown = 0;
 
     private massValue = document.querySelector<HTMLSpanElement>('#massValue');
     private leaderboardList = document.querySelector<HTMLOListElement>('#leaderboardList');
@@ -107,7 +106,6 @@ export class Game {
         }
 
         this.integrateFood(dt);
-        this.ejectCooldown = Math.max(0, this.ejectCooldown - dt);
         this.world.player = this.world.playerCells.reduce((best, cell) => (cell.radius > best.radius ? cell : best), this.world.player);
 
         if (this.splitPressed) {
@@ -115,10 +113,7 @@ export class Game {
             this.splitPressed = false;
         }
         if (this.ejectPressed) {
-            if (this.ejectCooldown <= 0) {
-                this.ejectMass(playerDir);
-                this.ejectCooldown = 0.11;
-            }
+            this.ejectMass(playerDir);
         }
 
         this.collisionSystem.update(this.world);
@@ -226,54 +221,46 @@ export class Game {
     }
 
     private splitPlayer(direction: Vector2): void {
+        if (this.world.playerCells.length >= 8) return;
+        const splitSource = this.world.playerCells.reduce((best, cell) => (cell.radius > best.radius ? cell : best), this.world.playerCells[0]);
+        if (!splitSource || splitSource.radius < 24) return;
+
         const norm = Math.hypot(direction.x, direction.y) || 1;
         const dir = { x: direction.x / norm, y: direction.y / norm };
-        const splitCandidates = [...this.world.playerCells].filter((cell) => cell.radius >= 24);
-        const slotsLeft = Math.max(0, 8 - this.world.playerCells.length);
-        const splitCount = Math.min(slotsLeft, splitCandidates.length);
-        if (splitCount <= 0) return;
+        const newRadius = splitSource.radius / 2;
+        splitSource.radius = newRadius;
 
-        for (let i = 0; i < splitCount; i++) {
-            const splitSource = splitCandidates[i];
-            const newRadius = splitSource.radius / 2;
-            splitSource.radius = newRadius;
-
-            const spawnOffset = newRadius * 1.9;
-            const newCell = new Player({
-                id: this.world.takeNextId(),
-                name: '1C',
-                position: {
-                    x: splitSource.position.x + dir.x * spawnOffset,
-                    y: splitSource.position.y + dir.y * spawnOffset
-                },
-                radius: newRadius,
-                color: splitSource.color,
-                texture: splitSource.texture,
-                speedMultiplier: splitSource.speedMultiplier
-            });
-            newCell.velocity.x = dir.x * 560;
-            newCell.velocity.y = dir.y * 560;
-            this.world.addEntity(newCell);
-        }
+        const spawnOffset = newRadius * 1.9;
+        const newCell = new Player({
+            id: this.world.takeNextId(),
+            name: '1C',
+            position: {
+                x: splitSource.position.x + dir.x * spawnOffset,
+                y: splitSource.position.y + dir.y * spawnOffset
+            },
+            radius: newRadius,
+            color: splitSource.color,
+            speedMultiplier: splitSource.speedMultiplier
+        });
+        newCell.velocity.x = dir.x * 560;
+        newCell.velocity.y = dir.y * 560;
+        this.world.addEntity(newCell);
     }
 
     private ejectMass(direction: Vector2): void {
         const norm = Math.hypot(direction.x, direction.y) || 1;
         const dir = { x: direction.x / norm, y: direction.y / norm };
-        const ejectedRadius = 4.8;
-        const minRadius = 12;
-
         for (const cell of this.world.playerCells) {
-            const remainingSquared = cell.radius * cell.radius - ejectedRadius * ejectedRadius;
-            if (remainingSquared < minRadius * minRadius) continue;
-            cell.radius = Math.sqrt(remainingSquared);
-
+            if (cell.radius < 18) continue;
+            cell.radius = Math.max(12, cell.radius - 1.15);
             const spawnPos = {
                 x: cell.position.x + dir.x * (cell.radius + 8),
                 y: cell.position.y + dir.y * (cell.radius + 8)
             };
-            const pellet = this.spawnSystem.burstFood(this.world, spawnPos, dir, 520, ejectedRadius);
+            const pellet = this.spawnSystem.burstFood(this.world, spawnPos, dir);
             this.world.addEntity(pellet);
+            cell.velocity.x -= dir.x * 80;
+            cell.velocity.y -= dir.y * 80;
         }
     }
 }
