@@ -75,19 +75,13 @@ export class AI {
         const len = Math.hypot(x, y) || 1;
         const baseX = x / len;
         const baseY = y / len;
-        const sideX = -baseY;
-        const sideY = baseX;
 
         const t = performance.now() * 0.001;
-        const zigzag = Math.sin(t * 6.4 + bot.id * 1.7);
-        const weave = 0.5 + Math.random() * 0.5;
-        const chaos = 0.65;
-        const jitterX = (Math.random() - 0.5) * 1.2;
-        const jitterY = (Math.random() - 0.5) * 1.2;
-        const evasiveX = baseX + sideX * zigzag * weave;
-        const evasiveY = baseY + sideY * zigzag * weave;
-        const mixedX = evasiveX * (1 - chaos) + jitterX * chaos;
-        const mixedY = evasiveY * (1 - chaos) + jitterY * chaos;
+        const chaos = 0.42;
+        const noiseX = Math.sin(t * 1.9 + bot.id * 3.1) + (Math.random() - 0.5) * 0.8;
+        const noiseY = Math.cos(t * 1.7 + bot.id * 2.3) + (Math.random() - 0.5) * 0.8;
+        const mixedX = baseX * (1 - chaos) + noiseX * chaos;
+        const mixedY = baseY * (1 - chaos) + noiseY * chaos;
         const mixedLen = Math.hypot(mixedX, mixedY) || 1;
         return { x: mixedX / mixedLen, y: mixedY / mixedLen };
     }
