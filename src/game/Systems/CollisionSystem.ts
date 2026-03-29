@@ -39,8 +39,10 @@ export class CollisionSystem {
 
                     const bigger = a.radius >= b.radius ? a : b;
                     const smaller = bigger.id === a.id ? b : a;
+                    const requiredOverlap = smaller.radius * 0.35;
+                    const engulfDistance = bigger.radius - requiredOverlap;
 
-                    if (bigger.radius > smaller.radius * 1.05) {
+                    if (bigger.radius > smaller.radius * 1.05 && dist <= engulfDistance) {
                         bigger.radius += smaller.radius * 0.2;
                         removed.add(smaller.id);
                     }
