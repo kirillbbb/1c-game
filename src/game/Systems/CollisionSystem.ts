@@ -58,4 +58,8 @@ export class CollisionSystem {
             winnerId: [...world.entities].sort((a, b) => b.radius - a.radius)[0]?.id
         };
     }
+
+    private absorbMass(consumer: Entity, prey: Entity): void {
+        consumer.radius = Math.sqrt(consumer.radius * consumer.radius + prey.radius * prey.radius);
+    }
 }

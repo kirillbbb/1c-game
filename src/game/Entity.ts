@@ -27,6 +27,7 @@ export class Entity {
     public velocity: Vector2;
     public radius: number;
     public readonly color: number;
+    public readonly texture?: Texture;
     public readonly isPlayer: boolean;
     public isAlive = true;
     public personality: Personality;
@@ -45,6 +46,7 @@ export class Entity {
         this.velocity = { x: 0, y: 0 };
         this.radius = config.radius;
         this.color = config.color;
+        this.texture = config.texture;
         this.isPlayer = config.isPlayer ?? false;
         this.showLabel = config.showLabel ?? true;
         this.personality = config.personality ?? 'neutral';
@@ -52,9 +54,9 @@ export class Entity {
 
         this.container = new Container();
         this.fallback = new Graphics();
-        this.sprite = new Sprite(config.texture ?? Texture.EMPTY);
+        this.sprite = new Sprite(this.texture ?? Texture.EMPTY);
         this.sprite.anchor.set(0.5);
-        this.sprite.visible = config.texture !== undefined;
+        this.sprite.visible = this.texture !== undefined;
 
         this.label = new Text({
             text: this.name,
