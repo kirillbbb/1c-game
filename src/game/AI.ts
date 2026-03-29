@@ -73,7 +73,23 @@ export class AI {
         const x = bot.position.x - target.position.x;
         const y = bot.position.y - target.position.y;
         const len = Math.hypot(x, y) || 1;
-        return { x: x / len, y: y / len };
+        const baseX = x / len;
+        const baseY = y / len;
+        const sideX = -baseY;
+        const sideY = baseX;
+
+        const t = performance.now() * 0.001;
+        const zigzag = Math.sin(t * 6.4 + bot.id * 1.7);
+        const weave = 0.5 + Math.random() * 0.5;
+        const chaos = 0.65;
+        const jitterX = (Math.random() - 0.5) * 1.2;
+        const jitterY = (Math.random() - 0.5) * 1.2;
+        const evasiveX = baseX + sideX * zigzag * weave;
+        const evasiveY = baseY + sideY * zigzag * weave;
+        const mixedX = evasiveX * (1 - chaos) + jitterX * chaos;
+        const mixedY = evasiveY * (1 - chaos) + jitterY * chaos;
+        const mixedLen = Math.hypot(mixedX, mixedY) || 1;
+        return { x: mixedX / mixedLen, y: mixedY / mixedLen };
     }
 
     private wander(bot: Bot, dt: number): Vector2 {
