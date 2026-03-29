@@ -1,4 +1,5 @@
 import type { Entity } from '../Entity';
+import { Food } from '../Food';
 import type { World } from '../World';
 
 interface CollisionResult {
@@ -24,6 +25,18 @@ export class CollisionSystem {
                 const dist = Math.hypot(dx, dy);
 
                 if (dist < a.radius + b.radius) {
+                    if (a instanceof Food && !(b instanceof Food)) {
+                        b.radius += a.radius * 0.32;
+                        removed.add(a.id);
+                        continue;
+                    }
+                    if (b instanceof Food && !(a instanceof Food)) {
+                        a.radius += b.radius * 0.32;
+                        removed.add(b.id);
+                        continue;
+                    }
+                    if (a instanceof Food && b instanceof Food) continue;
+
                     const bigger = a.radius >= b.radius ? a : b;
                     const smaller = bigger.id === a.id ? b : a;
 
