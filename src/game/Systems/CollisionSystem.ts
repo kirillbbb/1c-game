@@ -1,4 +1,5 @@
 import type { Entity } from '../Entity';
+import { Food } from '../Food';
 import type { World } from '../World';
 
 interface CollisionResult {
@@ -24,11 +25,25 @@ export class CollisionSystem {
                 const dist = Math.hypot(dx, dy);
 
                 if (dist < a.radius + b.radius) {
+                    if (a instanceof Food && !(b instanceof Food)) {
+                        this.absorbMass(b, a);
+                        removed.add(a.id);
+                        continue;
+                    }
+                    if (b instanceof Food && !(a instanceof Food)) {
+                        this.absorbMass(a, b);
+                        removed.add(b.id);
+                        continue;
+                    }
+                    if (a instanceof Food && b instanceof Food) continue;
+
                     const bigger = a.radius >= b.radius ? a : b;
                     const smaller = bigger.id === a.id ? b : a;
+                    const requiredOverlap = smaller.radius * 0.35;
+                    const engulfDistance = bigger.radius - requiredOverlap;
 
-                    if (bigger.radius > smaller.radius * 1.05) {
-                        bigger.radius += smaller.radius * 0.2;
+                    if (bigger.radius > smaller.radius * 1.05 && dist <= engulfDistance) {
+                        this.absorbMass(bigger, smaller);
                         removed.add(smaller.id);
                     }
                 }
@@ -42,5 +57,9 @@ export class CollisionSystem {
             eaten: eatenEntities,
             winnerId: [...world.entities].sort((a, b) => b.radius - a.radius)[0]?.id
         };
+    }
+
+    private absorbMass(consumer: Entity, prey: Entity): void {
+        consumer.radius = Math.sqrt(consumer.radius * consumer.radius + prey.radius * prey.radius);
     }
 }
