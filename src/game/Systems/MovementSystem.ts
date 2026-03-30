@@ -2,7 +2,7 @@ import type { Entity, Vector2 } from '../Entity';
 import type { World } from '../World';
 
 export class MovementSystem {
-    private readonly baseSpeed = 340;
+    private readonly baseSpeed = 300;
 
     public updateEntity(entity: Entity, direction: Vector2, world: World, dt: number): void {
         const mag = Math.hypot(direction.x, direction.y);

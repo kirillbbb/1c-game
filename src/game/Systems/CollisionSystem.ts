@@ -26,12 +26,12 @@ export class CollisionSystem {
 
                 if (dist < a.radius + b.radius) {
                     if (a instanceof Food && !(b instanceof Food)) {
-                        this.absorbMass(b, a);
+                        b.radius += a.radius * 0.32;
                         removed.add(a.id);
                         continue;
                     }
                     if (b instanceof Food && !(a instanceof Food)) {
-                        this.absorbMass(a, b);
+                        a.radius += b.radius * 0.32;
                         removed.add(b.id);
                         continue;
                     }
@@ -43,7 +43,7 @@ export class CollisionSystem {
                     const engulfDistance = bigger.radius - requiredOverlap;
 
                     if (bigger.radius > smaller.radius * 1.05 && dist <= engulfDistance) {
-                        this.absorbMass(bigger, smaller);
+                        bigger.radius += smaller.radius * 0.2;
                         removed.add(smaller.id);
                     }
                 }

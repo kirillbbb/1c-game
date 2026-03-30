@@ -64,12 +64,12 @@ export class SpawnSystem {
         });
     }
 
-    public burstFood(world: World, position: Vector2, direction: Vector2, speed = 520, radius = this.randBetween(4, 6)): Food {
+    public burstFood(world: World, position: Vector2, direction: Vector2, speed = 520): Food {
         const food = new Food({
             id: world.takeNextId(),
             name: '',
             position: { ...position },
-            radius,
+            radius: this.randBetween(4, 6),
             color: 0xb8ff6f
         });
         food.velocity.x = direction.x * speed;
