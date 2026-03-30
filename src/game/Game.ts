@@ -10,6 +10,11 @@ import { SpawnSystem } from './Systems/SpawnSystem';
 import { World } from './World';
 
 export class Game {
+    private static readonly MAX_PLAYER_CELLS = 8;
+    private static readonly MIN_SPLIT_RADIUS = 24;
+    private static readonly EJECTED_RADIUS = 4.8;
+    private static readonly MIN_CELL_RADIUS_AFTER_EJECT = 12;
+
     private readonly app: Application;
     private readonly root: HTMLElement;
     private world!: World;
@@ -24,6 +29,9 @@ export class Game {
     private accum = 0;
     private readonly fixedDt = 1 / 60;
     private running = true;
+    private splitPressed = false;
+    private ejectPressed = false;
+    private ejectCooldown = 0;
 
     private massValue = document.querySelector<HTMLSpanElement>('#massValue');
     private leaderboardList = document.querySelector<HTMLOListElement>('#leaderboardList');
@@ -63,7 +71,7 @@ export class Game {
         this.camera = new Camera(this.world.container, this.world.width, this.world.height, () => this.app.screen.width, () => this.app.screen.height);
 
         await this.spawnSystem.preload();
-        this.spawnSystem.maintain(this.world, 60, 70);
+        this.spawnSystem.maintain(this.world, 40, 50, 230, 270);
 
         this.renderSystem = new RenderSystem(this.world);
         this.app.stage.addChild(this.world.container);
@@ -94,15 +102,32 @@ export class Game {
         if (!this.running) return;
 
         const playerDir = this.directionToMouseWorld();
-        this.movementSystem.updateEntity(this.world.player, playerDir, this.world, dt);
+        for (const cell of this.world.playerCells) {
+            this.movementSystem.updateEntity(cell, playerDir, this.world, dt);
+        }
 
         for (const bot of this.world.bots) {
             this.ai.update(bot, this.world.entities, dt);
             this.movementSystem.updateEntity(bot, bot.targetDirection, this.world, dt);
         }
 
-        const collisions = this.collisionSystem.update(this.world);
-        if (collisions.eaten.some((e) => e.id === this.world.player.id)) {
+        this.integrateFood(dt);
+        this.ejectCooldown = Math.max(0, this.ejectCooldown - dt);
+        this.world.player = this.world.playerCells.reduce((best, cell) => (cell.radius > best.radius ? cell : best), this.world.player);
+
+        if (this.splitPressed) {
+            this.splitPlayer(playerDir);
+            this.splitPressed = false;
+        }
+        if (this.ejectPressed) {
+            if (this.ejectCooldown <= 0) {
+                this.ejectMass(playerDir);
+                this.ejectCooldown = 0.11;
+            }
+        }
+
+        this.collisionSystem.update(this.world);
+        if (this.world.playerCells.length === 0) {
             this.running = false;
             if (this.gameOverText) {
                 const top = this.topEntities()[0];
@@ -112,7 +137,7 @@ export class Game {
             return;
         }
 
-        this.spawnSystem.maintain(this.world, 50, 70);
+        this.spawnSystem.maintain(this.world, 36, 50, 220, 280);
         this.updateHud();
     }
 
@@ -126,6 +151,13 @@ export class Game {
         this.root.addEventListener('pointermove', (evt) => {
             this.mouse.x = evt.clientX;
             this.mouse.y = evt.clientY;
+        });
+        window.addEventListener('keydown', (evt) => {
+            if (evt.code === 'Space') this.splitPressed = true;
+            if (evt.code === 'KeyW') this.ejectPressed = true;
+        });
+        window.addEventListener('keyup', (evt) => {
+            if (evt.code === 'KeyW') this.ejectPressed = false;
         });
     }
 
@@ -145,7 +177,8 @@ export class Game {
     }
 
     private updateHud(): void {
-        if (this.massValue) this.massValue.textContent = `${Math.round(this.world.player.radius)}`;
+        const totalPlayerMass = this.world.playerCells.reduce((sum, cell) => sum + cell.radius, 0);
+        if (this.massValue) this.massValue.textContent = `${Math.round(totalPlayerMass)}`;
         if (this.leaderboardList) {
             const top = this.topEntities().slice(0, 5);
             this.leaderboardList.innerHTML = top
@@ -155,7 +188,7 @@ export class Game {
     }
 
     private topEntities() {
-        return [...this.world.entities].sort((a, b) => b.radius - a.radius);
+        return [...this.world.entities].filter((entity) => entity.name).sort((a, b) => b.radius - a.radius);
     }
 
     private drawMinimap(): void {
@@ -182,6 +215,70 @@ export class Game {
             ctx.arc(entity.position.x * sx, entity.position.y * sy, Math.max(2, entity.radius * sx * 0.6), 0, Math.PI * 2);
             ctx.fillStyle = entity.isPlayer ? '#5dffb0' : '#ff6b6b';
             ctx.fill();
+        }
+    }
+
+    private integrateFood(dt: number): void {
+        const drag = 1 - Math.exp(-dt * 9);
+        for (const food of this.world.foods) {
+            food.velocity.x += (0 - food.velocity.x) * drag;
+            food.velocity.y += (0 - food.velocity.y) * drag;
+            food.position.x += food.velocity.x * dt;
+            food.position.y += food.velocity.y * dt;
+            food.position.x = Math.max(food.radius, Math.min(this.world.width - food.radius, food.position.x));
+            food.position.y = Math.max(food.radius, Math.min(this.world.height - food.radius, food.position.y));
+        }
+    }
+
+    private splitPlayer(direction: Vector2): void {
+        const norm = Math.hypot(direction.x, direction.y) || 1;
+        const dir = { x: direction.x / norm, y: direction.y / norm };
+        const splitCandidates = [...this.world.playerCells]
+            .filter((cell) => cell.radius >= Game.MIN_SPLIT_RADIUS)
+            .sort((a, b) => b.radius - a.radius);
+        const slotsLeft = Math.max(0, Game.MAX_PLAYER_CELLS - this.world.playerCells.length);
+        const splitCount = Math.min(slotsLeft, splitCandidates.length);
+        if (splitCount <= 0) return;
+
+        for (let i = 0; i < splitCount; i++) {
+            const splitSource = splitCandidates[i];
+            const newRadius = splitSource.radius / 2;
+            splitSource.radius = newRadius;
+
+            const spawnOffset = newRadius * 1.9;
+            const newCell = new Player({
+                id: this.world.takeNextId(),
+                name: '1C',
+                position: {
+                    x: Math.max(newRadius, Math.min(this.world.width - newRadius, splitSource.position.x + dir.x * spawnOffset)),
+                    y: Math.max(newRadius, Math.min(this.world.height - newRadius, splitSource.position.y + dir.y * spawnOffset))
+                },
+                radius: newRadius,
+                color: splitSource.color,
+                texture: splitSource.texture,
+                speedMultiplier: splitSource.speedMultiplier
+            });
+            newCell.velocity.x = dir.x * 560;
+            newCell.velocity.y = dir.y * 560;
+            this.world.addEntity(newCell);
+        }
+    }
+
+    private ejectMass(direction: Vector2): void {
+        const norm = Math.hypot(direction.x, direction.y) || 1;
+        const dir = { x: direction.x / norm, y: direction.y / norm };
+
+        for (const cell of this.world.playerCells) {
+            const remainingSquared = cell.radius * cell.radius - Game.EJECTED_RADIUS * Game.EJECTED_RADIUS;
+            if (remainingSquared < Game.MIN_CELL_RADIUS_AFTER_EJECT * Game.MIN_CELL_RADIUS_AFTER_EJECT) continue;
+            cell.radius = Math.sqrt(remainingSquared);
+
+            const spawnPos = {
+                x: cell.position.x + dir.x * (cell.radius + 8),
+                y: cell.position.y + dir.y * (cell.radius + 8)
+            };
+            const pellet = this.spawnSystem.burstFood(this.world, spawnPos, dir, 520, Game.EJECTED_RADIUS);
+            this.world.addEntity(pellet);
         }
     }
 }

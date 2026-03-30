@@ -17,6 +17,7 @@ export interface EntityConfig {
     speedMultiplier?: number;
     personality?: Personality;
     isPlayer?: boolean;
+    showLabel?: boolean;
 }
 
 export class Entity {
@@ -26,10 +27,12 @@ export class Entity {
     public velocity: Vector2;
     public radius: number;
     public readonly color: number;
+    public readonly texture?: Texture;
     public readonly isPlayer: boolean;
     public isAlive = true;
     public personality: Personality;
     public speedMultiplier: number;
+    public readonly showLabel: boolean;
 
     public readonly container: Container;
     private readonly fallback: Graphics;
@@ -43,15 +46,17 @@ export class Entity {
         this.velocity = { x: 0, y: 0 };
         this.radius = config.radius;
         this.color = config.color;
+        this.texture = config.texture;
         this.isPlayer = config.isPlayer ?? false;
+        this.showLabel = config.showLabel ?? true;
         this.personality = config.personality ?? 'neutral';
         this.speedMultiplier = config.speedMultiplier ?? 1;
 
         this.container = new Container();
         this.fallback = new Graphics();
-        this.sprite = new Sprite(config.texture ?? Texture.EMPTY);
+        this.sprite = new Sprite(this.texture ?? Texture.EMPTY);
         this.sprite.anchor.set(0.5);
-        this.sprite.visible = config.texture !== undefined;
+        this.sprite.visible = this.texture !== undefined;
 
         this.label = new Text({
             text: this.name,
@@ -63,6 +68,7 @@ export class Entity {
             }
         });
         this.label.anchor.set(0.5, 0.5);
+        this.label.visible = this.showLabel;
 
         this.container.addChild(this.fallback, this.sprite, this.label);
         this.syncVisual();
@@ -81,7 +87,9 @@ export class Entity {
             this.sprite.height = size;
         }
 
-        this.label.style.fontSize = Math.max(10, Math.min(18, this.radius * 0.4));
-        this.label.position.y = this.radius + 14;
+        if (this.showLabel) {
+            this.label.style.fontSize = Math.max(10, Math.min(18, this.radius * 0.4));
+            this.label.position.y = this.radius + 14;
+        }
     }
 }
