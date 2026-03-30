@@ -10,6 +10,11 @@ import { SpawnSystem } from './Systems/SpawnSystem';
 import { World } from './World';
 
 export class Game {
+    private static readonly MAX_PLAYER_CELLS = 8;
+    private static readonly MIN_SPLIT_RADIUS = 24;
+    private static readonly EJECTED_RADIUS = 4.8;
+    private static readonly MIN_CELL_RADIUS_AFTER_EJECT = 12;
+
     private readonly app: Application;
     private readonly root: HTMLElement;
     private world!: World;
