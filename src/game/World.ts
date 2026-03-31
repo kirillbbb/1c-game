@@ -54,11 +54,7 @@ export class World {
         return this.nextId++;
     }
 
-    /**
-     * Camera focus based on mass-weighted center of all player cells.
-     * This avoids visible jitter when one cell momentarily gets pushed
-     * (e.g. during `W` eject mass).
-     */
+
     public getPlayerFocus(): { position: Vector2; radius: number } {
         if (this.playerCells.length === 0) {
             return { position: { x: 0, y: 0 }, radius: 0 };

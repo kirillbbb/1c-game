@@ -31,22 +31,30 @@ export class Camera {
         const w = this.viewportWidth();
         const h = this.viewportHeight();
 
-        const desiredZoom = Math.max(0.42, Math.min(1.08, 115 / (focus.radius + 45)));
+
+        const targetScale = Math.max(0.42, Math.min(1.08, 115 / (focus.radius + 45)));
         const zoomLerp = 1 - Math.exp(-dt * 5);
-        this.container.scale.x += (desiredZoom - this.container.scale.x) * zoomLerp;
+
+        this.container.scale.x += (targetScale - this.container.scale.x) * zoomLerp;
         this.container.scale.y = this.container.scale.x;
 
-        const scaledHalfW = w / (2 * this.container.scale.x);
-        const scaledHalfH = h / (2 * this.container.scale.y);
+        const scale = this.container.scale.x;
 
-        const targetX = Math.max(scaledHalfW, Math.min(this.worldWidth - scaledHalfW, focus.position.x));
-        const targetY = Math.max(scaledHalfH, Math.min(this.worldHeight - scaledHalfH, focus.position.y));
 
-        const desiredWorldX = -targetX + scaledHalfW;
-        const desiredWorldY = -targetY + scaledHalfH;
+        let targetX = -focus.position.x * scale + w / 2;
+        let targetY = -focus.position.y * scale + h / 2;
+
+
+        const minX = -(this.worldWidth * scale - w);
+        const minY = -(this.worldHeight * scale - h);
+
+        targetX = Math.min(0, Math.max(minX, targetX));
+        targetY = Math.min(0, Math.max(minY, targetY));
+
 
         const posLerp = 1 - Math.exp(-dt * 7);
-        this.container.position.x += (desiredWorldX - this.container.position.x) * posLerp;
-        this.container.position.y += (desiredWorldY - this.container.position.y) * posLerp;
+
+        this.container.position.x += (targetX - this.container.position.x) * posLerp;
+        this.container.position.y += (targetY - this.container.position.y) * posLerp;
     }
 }
