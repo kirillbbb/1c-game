@@ -14,9 +14,9 @@ interface LanguageArchetype {
 }
 
 const ARCHETYPES: LanguageArchetype[] = [
-    { name: 'Python', color: 0x4f9cff, personality: 'coward', speedMultiplier: 1.18, icon: '/icons/python.png', radiusBias: -4 },
-    { name: 'C++', color: 0x6781ff, personality: 'aggressive', speedMultiplier: 0.84, icon: '/icons/cpp.png', radiusBias: 12 },
-    { name: 'Java', color: 0xff7c51, personality: 'neutral', speedMultiplier: 1, icon: '/icons/java.png', radiusBias: 0 },
+    { name: 'Python', color: 0x3b3b3b, personality: 'coward', speedMultiplier: 1.18, icon: '/icons/python.png', radiusBias: -4 },
+    { name: 'C++', color: 0xcfcfcf, personality: 'aggressive', speedMultiplier: 0.84, icon: '/icons/cpp.png', radiusBias: 12 },
+    { name: 'Java', color: 0xffffff, personality: 'neutral', speedMultiplier: 1, icon: '/icons/java.png', radiusBias: 0 },
     { name: 'JavaScript', color: 0xf6d94f, personality: 'aggressive', speedMultiplier: 1.15, icon: '/icons/javascript.png', radiusBias: -8 }
 ];
 
@@ -64,12 +64,12 @@ export class SpawnSystem {
         });
     }
 
-    public burstFood(world: World, position: Vector2, direction: Vector2, speed = 520): Food {
+    public burstFood(world: World, position: Vector2, direction: Vector2, speed = 520, radius?: number): Food {
         const food = new Food({
             id: world.takeNextId(),
             name: '',
             position: { ...position },
-            radius: this.randBetween(4, 6),
+            radius: radius ?? this.randBetween(4, 6),
             color: 0xb8ff6f
         });
         food.velocity.x = direction.x * speed;
@@ -90,7 +90,8 @@ export class SpawnSystem {
             color: archetype.color,
             personality: archetype.personality,
             speedMultiplier: archetype.speedMultiplier,
-            texture: this.textures.get(archetype.name)
+            texture: this.textures.get(archetype.name),
+            showLabel: false
         });
     }
 

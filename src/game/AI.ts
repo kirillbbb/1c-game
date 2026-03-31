@@ -26,17 +26,35 @@ export class AI {
         const chaseBias = bot.personality === 'aggressive' ? 1.3 : bot.personality === 'coward' ? 0.7 : 1;
 
         let desired: Vector2;
-        if (threats.length > 0 && (escapeBias >= chaseBias || prey.length === 0)) {
+        const escapeMode = threats.length > 0 && (escapeBias >= chaseBias || prey.length === 0);
+
+        if (escapeMode) {
             const nearest = this.findNearest(bot, threats);
-            desired = this.away(bot, nearest);
+
+            // When escaping, bots should be easier to catch:
+            // slower + less responsive + more chaotic direction.
+            bot.speedFactor = bot.personality === 'coward' ? 0.7 : 0.8;
+            const escapeChaos = bot.personality === 'coward' ? 0.58 : 0.46;
+            const awayVec = this.away(bot, nearest, escapeChaos);
+
+            // "Dumb" escape: a small pull back toward the threat makes dodging imperfect.
+            const towardVec = this.toward(bot, nearest);
+            const dumbness = bot.personality === 'coward' ? 0.26 : 0.18;
+            desired = {
+                x: awayVec.x * (1 - dumbness) + towardVec.x * dumbness * 0.35,
+                y: awayVec.y * (1 - dumbness) + towardVec.y * dumbness * 0.35
+            };
         } else if (prey.length > 0) {
             const nearest = this.findNearest(bot, prey);
             desired = this.toward(bot, nearest);
+            bot.speedFactor = 1;
         } else {
             desired = this.wander(bot, dt);
+            bot.speedFactor = 0.95;
         }
 
-        const smoothing = 1 - Math.exp(-dt * 6);
+        const smoothingRate = escapeMode ? 3 : 6;
+        const smoothing = 1 - Math.exp(-dt * smoothingRate);
         bot.targetDirection.x += (desired.x - bot.targetDirection.x) * smoothing;
         bot.targetDirection.y += (desired.y - bot.targetDirection.y) * smoothing;
 
@@ -69,7 +87,7 @@ export class AI {
         return { x: x / len, y: y / len };
     }
 
-    private away(bot: Bot, target: Entity): Vector2 {
+    private away(bot: Bot, target: Entity, chaos: number): Vector2 {
         const x = bot.position.x - target.position.x;
         const y = bot.position.y - target.position.y;
         const len = Math.hypot(x, y) || 1;
@@ -77,11 +95,13 @@ export class AI {
         const baseY = y / len;
 
         const t = performance.now() * 0.001;
-        const chaos = 0.42;
-        const noiseX = Math.sin(t * 1.9 + bot.id * 3.1) + (Math.random() - 0.5) * 0.8;
-        const noiseY = Math.cos(t * 1.7 + bot.id * 2.3) + (Math.random() - 0.5) * 0.8;
-        const mixedX = baseX * (1 - chaos) + noiseX * chaos;
-        const mixedY = baseY * (1 - chaos) + noiseY * chaos;
+        const clampedChaos = Math.max(0, Math.min(0.95, chaos));
+        const noiseAmplitude = 0.5 + clampedChaos * 0.8;
+        const noiseX = Math.sin(t * 1.9 + bot.id * 3.1) + (Math.random() - 0.5) * noiseAmplitude;
+        const noiseY = Math.cos(t * 1.7 + bot.id * 2.3) + (Math.random() - 0.5) * noiseAmplitude;
+
+        const mixedX = baseX * (1 - clampedChaos) + noiseX * clampedChaos;
+        const mixedY = baseY * (1 - clampedChaos) + noiseY * clampedChaos;
         const mixedLen = Math.hypot(mixedX, mixedY) || 1;
         return { x: mixedX / mixedLen, y: mixedY / mixedLen };
     }

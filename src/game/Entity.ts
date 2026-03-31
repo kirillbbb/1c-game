@@ -76,17 +76,20 @@ export class Entity {
 
     public syncVisual(): void {
         this.container.position.set(this.position.x, this.position.y);
-
+    
         this.fallback.clear();
-        this.fallback.circle(0, 0, this.radius).fill({ color: this.color, alpha: 0.94 });
-        this.fallback.circle(0, 0, this.radius).stroke({ color: 0xffffff, width: 2, alpha: 0.22 });
-
+    
+        if (!this.texture) {
+            this.fallback.circle(0, 0, this.radius).fill({ color: this.color, alpha: 0.94 });
+            this.fallback.circle(0, 0, this.radius).stroke({ color: 0xffffff, width: 2, alpha: 0.22 });
+        }
+    
         if (this.sprite.visible) {
             const size = this.radius * 1.7;
             this.sprite.width = size;
             this.sprite.height = size;
         }
-
+    
         if (this.showLabel) {
             this.label.style.fontSize = Math.max(10, Math.min(18, this.radius * 0.4));
             this.label.position.y = this.radius + 14;

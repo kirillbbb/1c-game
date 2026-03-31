@@ -1,5 +1,6 @@
 import type { Entity } from '../Entity';
 import { Food } from '../Food';
+import { Player } from '../Player';
 import type { World } from '../World';
 
 interface CollisionResult {
@@ -11,6 +12,7 @@ export class CollisionSystem {
     public update(world: World): CollisionResult {
         const removed = new Set<number>();
         const entities = world.entities;
+        let eatenEntitiesLast: Entity[] = [];
 
         for (let i = 0; i < entities.length; i++) {
             const a = entities[i];
@@ -26,12 +28,12 @@ export class CollisionSystem {
 
                 if (dist < a.radius + b.radius) {
                     if (a instanceof Food && !(b instanceof Food)) {
-                        b.radius += a.radius * 0.32;
+                        this.absorbMass(b, a);
                         removed.add(a.id);
                         continue;
                     }
                     if (b instanceof Food && !(a instanceof Food)) {
-                        a.radius += b.radius * 0.32;
+                        this.absorbMass(a, b);
                         removed.add(b.id);
                         continue;
                     }
@@ -42,24 +44,33 @@ export class CollisionSystem {
                     const requiredOverlap = smaller.radius * 0.35;
                     const engulfDistance = bigger.radius - requiredOverlap;
 
-                    if (bigger.radius > smaller.radius * 1.05 && dist <= engulfDistance) {
-                        bigger.radius += smaller.radius * 0.2;
-                        removed.add(smaller.id);
-                    }
+
+                const minSizeRatio = bigger instanceof Player && smaller instanceof Player ? 1.0 : 1.05;
+                if (bigger.radius >= smaller.radius * minSizeRatio && dist <= engulfDistance) {
+                    this.absorbMass(bigger, smaller);
+                    removed.add(smaller.id);
+                }
                 }
             }
+
+            const eatenEntities = entities.filter((e) => removed.has(e.id));
+            eatenEntities.forEach((e) => world.removeEntity(e));
+
+            eatenEntitiesLast = eatenEntities;
         }
 
-        const eatenEntities = entities.filter((e) => removed.has(e.id));
-        eatenEntities.forEach((e) => world.removeEntity(e));
-
         return {
-            eaten: eatenEntities,
+            eaten: eatenEntitiesLast,
             winnerId: [...world.entities].sort((a, b) => b.radius - a.radius)[0]?.id
         };
+
     }
 
     private absorbMass(consumer: Entity, prey: Entity): void {
+        if (prey instanceof Food) {
+            consumer.radius += 1;
+            return;
+        }
         consumer.radius = Math.sqrt(consumer.radius * consumer.radius + prey.radius * prey.radius);
     }
-}
+    }

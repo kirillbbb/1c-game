@@ -2,13 +2,14 @@ import type { Entity, Vector2 } from '../Entity';
 import type { World } from '../World';
 
 export class MovementSystem {
-    private readonly baseSpeed = 300;
+    private readonly baseSpeed = 500;
 
     public updateEntity(entity: Entity, direction: Vector2, world: World, dt: number): void {
         const mag = Math.hypot(direction.x, direction.y);
         const dir = mag > 0 ? { x: direction.x / mag, y: direction.y / mag } : { x: 0, y: 0 };
 
-        const speed = (this.baseSpeed / Math.sqrt(entity.radius)) * entity.speedMultiplier;
+        const speedFactor = (entity as unknown as { speedFactor?: number }).speedFactor ?? 1;
+        const speed = (this.baseSpeed / Math.sqrt(entity.radius)) * entity.speedMultiplier * speedFactor;
         const targetVx = dir.x * speed;
         const targetVy = dir.y * speed;
 

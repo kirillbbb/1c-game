@@ -1,5 +1,10 @@
 import type { Container } from 'pixi.js';
-import type { Player } from './Player';
+import type { Vector2 } from './Entity';
+
+export type CameraFocus = {
+    position: Vector2;
+    radius: number;
+};
 
 export class Camera {
     private readonly viewportWidth: () => number;
@@ -22,11 +27,11 @@ export class Camera {
         this.viewportHeight = viewportHeight;
     }
 
-    public update(player: Player, dt: number): void {
+    public update(focus: CameraFocus, dt: number): void {
         const w = this.viewportWidth();
         const h = this.viewportHeight();
 
-        const desiredZoom = Math.max(0.42, Math.min(1.08, 115 / (player.radius + 45)));
+        const desiredZoom = Math.max(0.42, Math.min(1.08, 115 / (focus.radius + 45)));
         const zoomLerp = 1 - Math.exp(-dt * 5);
         this.container.scale.x += (desiredZoom - this.container.scale.x) * zoomLerp;
         this.container.scale.y = this.container.scale.x;
@@ -34,8 +39,8 @@ export class Camera {
         const scaledHalfW = w / (2 * this.container.scale.x);
         const scaledHalfH = h / (2 * this.container.scale.y);
 
-        const targetX = Math.max(scaledHalfW, Math.min(this.worldWidth - scaledHalfW, player.position.x));
-        const targetY = Math.max(scaledHalfH, Math.min(this.worldHeight - scaledHalfH, player.position.y));
+        const targetX = Math.max(scaledHalfW, Math.min(this.worldWidth - scaledHalfW, focus.position.x));
+        const targetY = Math.max(scaledHalfH, Math.min(this.worldHeight - scaledHalfH, focus.position.y));
 
         const desiredWorldX = -targetX + scaledHalfW;
         const desiredWorldY = -targetY + scaledHalfH;

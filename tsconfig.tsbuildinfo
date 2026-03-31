@@ -1,0 +1,1 @@
+{"root":["./src/main.ts","./src/game/ai.ts","./src/game/bot.ts","./src/game/camera.ts","./src/game/entity.ts","./src/game/food.ts","./src/game/game.ts","./src/game/player.ts","./src/game/world.ts","./src/game/systems/collisionsystem.ts","./src/game/systems/movementsystem.ts","./src/game/systems/rendersystem.ts","./src/game/systems/spawnsystem.ts"],"version":"5.9.3"}

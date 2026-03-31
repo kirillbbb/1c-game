@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { Bot } from './Bot';
-import { Entity } from './Entity';
+import { Entity, type Vector2 } from './Entity';
 import { Food } from './Food';
 import { Player } from './Player';
 
@@ -52,5 +52,35 @@ export class World {
 
     public takeNextId(): number {
         return this.nextId++;
+    }
+
+    /**
+     * Camera focus based on mass-weighted center of all player cells.
+     * This avoids visible jitter when one cell momentarily gets pushed
+     * (e.g. during `W` eject mass).
+     */
+    public getPlayerFocus(): { position: Vector2; radius: number } {
+        if (this.playerCells.length === 0) {
+            return { position: { x: 0, y: 0 }, radius: 0 };
+        }
+
+        let areaSum = 0;
+        let xSum = 0;
+        let ySum = 0;
+        let maxRadius = 0;
+
+        for (const cell of this.playerCells) {
+            const area = cell.radius * cell.radius; // area ~ mass
+            areaSum += area;
+            xSum += cell.position.x * area;
+            ySum += cell.position.y * area;
+            maxRadius = Math.max(maxRadius, cell.radius);
+        }
+
+        const inv = areaSum > 0 ? 1 / areaSum : 0;
+        return {
+            position: { x: xSum * inv, y: ySum * inv },
+            radius: maxRadius
+        };
     }
 }
