@@ -83,7 +83,7 @@ export class Game {
 
         this.spawnSystem.maintain(this.world, 80, 100, 300, 400);
 
-        this.renderSystem = new RenderSystem(this.world);
+        this.renderSystem = new RenderSystem();
         this.app.stage.addChild(this.world.container);
 
         this.bindInput();
