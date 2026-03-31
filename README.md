@@ -22,11 +22,12 @@
 ---
 
 ## 🚀 Запуск проекта
-Деплой на Vercel:
-```bash
-```
+### Деплой на Vercel:
 
-Локально:
+https://1c-game.vercel.app/
+
+
+### Локально:
 ```bash
 npm install
 npm run dev
@@ -63,50 +64,38 @@ http://localhost:5173
 ## 📁 Структура проекта
 
 ```
-src/
-  main.ts
-  game/
-    Systems/
-    AI.ts
-    World.ts
-    Game.ts
-public/
-  icons/
+1c/
+├── public/
+│ ├── icons/
+│ └── legenda.png
+│
+├── src/
+│ ├── game/
+│ │ ├── Systems/
+│ │ │ ├── CollisionSystem.ts
+│ │ │ ├── MovementSystem.ts
+│ │ │ ├── RenderSystem.ts
+│ │ │ └── SpawnSystem.ts
+│ │ │
+│ │ ├── AI.ts
+│ │ ├── Bot.ts
+│ │ ├── Camera.ts
+│ │ ├── Entity.ts
+│ │ ├── Food.ts
+│ │ ├── Game.ts
+│ │ ├── Player.ts
+│ │ └── World.ts
+│ │
+│ └── main.ts
+│
+├── index.html
+├── package.json
+├── package-lock.json
+├── tsconfig.json
+├── vite.config.ts
+├── README.md
+└── .gitignore
 ```
 
 ---
 
-## ✨ Фичи
-
-* 🤖 Умные боты (AI)
-* ⚡ Разделение как в Agar.io
-* 🧭 Миникарта
-* 🏆 Таблица лидеров
-* 🎨 Кастомные иконки языков
-
----
-
-## 🔥 Планы по улучшению
-
-* Улучшенный AI
-* Способности (abilities)
-* Анимации
-* Мультиплеер
-
----
-
-## 🧑‍💻 Автор
-
-Kirill
-
----
-
-## 📸 Скриншоты
-
-*(добавь позже скрин своей игры сюда)*
-
----
-
-## ⭐ Если понравилось
-
-Поставь звезду репозиторию ⭐
